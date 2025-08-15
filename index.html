@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Temperature Converter — C / F / K</title>
+  <style>
+    :root{
+      --bg:#0f1020;
+      --panel:#17182a;
+      --ink:#e7e9f2;
+      --muted:#a6abc1;
+      --accent:#64e6c5;
+      --accent-2:#7c5cff;
+      --radius:16px;
+      --shadow:0 10px 30px rgba(0,0,0,.35);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+      color:var(--ink);
+      background:
+        radial-gradient(900px 400px at 90% -10%, rgba(124,92,255,.25), transparent 60%),
+        radial-gradient(800px 380px at 10% -10%, rgba(100,230,197,.18), transparent 60%),
+        var(--bg);
+      display:grid;
+      place-items:center;
+      padding:24px;
+    }
+    .card{
+      width:min(720px, 94vw);
+      background:linear-gradient(180deg, rgba(255,255,255,.06), transparent 60%) var(--panel);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .head{
+      padding:18px 22px;
+      background:
+        linear-gradient(135deg, rgba(124,92,255,.25), rgba(100,230,197,.18));
+      border-bottom:1px solid rgba(255,255,255,.08);
+      display:flex; align-items:center; gap:12px;
+    }
+    .head .badge{font-size:24px; filter:drop-shadow(0 2px 8px rgba(124,92,255,.5))}
+    .head h1{font-size:18px; margin:0; letter-spacing:.4px}
+    form{padding:22px}
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr 160px 160px;
+      gap:12px;
+    }
+    label{font-size:12px; color:var(--muted); letter-spacing:.2px; display:block; margin-bottom:6px}
+    input[type="text"], select{
+      width:100%;
+      padding:12px 14px;
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,.12);
+      background:#121327;
+      color:var(--ink);
+      outline:none;
+    }
+    input[type="text"]:focus, select:focus{
+      border-color:var(--accent);
+      box-shadow:0 0 0 3px rgba(100,230,197,.15);
+    }
+    .actions{
+      margin-top:14px;
+      display:flex; gap:10px; flex-wrap:wrap;
+    }
+    button{
+      appearance:none;
+      border:none;
+      padding:12px 16px;
+      border-radius:999px;
+      font-weight:600;
+      cursor:pointer;
+      transition:transform .15s ease, opacity .15s ease;
+    }
+    .btn-primary{
+      background:linear-gradient(135deg, var(--accent), #36c9a7);
+      color:#0e1222;
+    }
+    .btn-ghost{
+      background:transparent;
+      color:var(--ink);
+      border:1px solid rgba(255,255,255,.16);
+    }
+    button:hover{transform:translateY(-1.5px)}
+    .status{
+      margin-top:16px;
+      padding:14px 16px;
+      border-radius:12px;
+      background:#121327;
+      border:1px dashed rgba(255,255,255,.14);
+      min-height:56px;
+    }
+    .status .ok{font-size:20px}
+    .status .err{color:#ff7b7b}
+    .row{margin-bottom:8px}
+    .note{font-size:12px; color:var(--muted); margin-top:8px}
+    .foot{
+      border-top:1px solid rgba(255,255,255,.08);
+      padding:12px 16px;
+      display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;
+      font-size:12px; color:var(--muted);
+    }
+    .chip{
+      display:inline-flex; align-items:center; gap:6px;
+      padding:6px 10px; border-radius:999px;
+      border:1px solid rgba(255,255,255,.16);
+      background:#101225;
+    }
+    @media (max-width:700px){
+      .grid{grid-template-columns:1fr 1fr; }
+      .grid > .span-2{grid-column:1/-1}
+    }
+  </style>
+</head>
+<body>
+  <div class="card" role="application" aria-labelledby="app-title">
+    <div class="head">
+      <div class="badge">🌡️</div>
+      <h1 id="app-title">Temperature Converter</h1>
+    </div>
+
+    <form id="converter" novalidate>
+      <div class="grid">
+        <div class="row span-2">
+          <label for="temp-input">Enter temperature</label>
+          <input type="text" id="temp-input" inputmode="decimal" placeholder="e.g., 37.5 or -10" autocomplete="off" />
+        </div>
+
+        <div class="row">
+          <label for="from-unit">From</label>
+          <select id="from-unit" aria-label="From unit">
+            <option value="C">Celsius (°C)</option>
+            <option value="F">Fahrenheit (°F)</option>
+            <option value="K">Kelvin (K)</option>
+          </select>
+        </div>
+
+        <div class="row">
+          <label for="to-unit">To</label>
+          <select id="to-unit" aria-label="To unit">
+            <option value="F">Fahrenheit (°F)</option>
+            <option value="C">Celsius (°C)</option>
+            <option value="K">Kelvin (K)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button type="button" class="btn-primary" id="convert-btn">Convert</button>
+        <button type="button" class="btn-ghost" id="swap-btn" title="Swap From/To">Swap Units ↔</button>
+        <div class="chip" title="Absolute zero protection">🧊 Absolute-zero check</div>
+      </div>
+
+      <div class="status" id="status" aria-live="polite">
+        <!-- result or error will appear here -->
+      </div>
+
+      <p class="note">Tip: Kelvin has no degree symbol; it’s just “K”.</p>
+    </form>
+
+    <div class="foot">
+      <span>Formulas: °F = °C × 9/5 + 32 · K = °C + 273.15</span>
+      <span>Made with plain HTML, CSS & JS</span>
+    </div>
+  </div>
+
+  <script>
+    const input = document.getElementById('temp-input');
+    const from = document.getElementById('from-unit');
+    const to = document.getElementById('to-unit');
+    const statusBox = document.getElementById('status');
+    const convertBtn = document.getElementById('convert-btn');
+    const swapBtn = document.getElementById('swap-btn');
+
+    // Helpers
+    const fmtUnit = (u) => u === 'C' ? '°C' : (u === 'F' ? '°F' : 'K');
+    const clampDecimals = (n) => Number.isFinite(n) ? (Math.abs(n) < 1e6 ? Number(n.toFixed(2)) : n) : n;
+
+    // Absolute zero limits by unit
+    const MIN_BY_UNIT = { C: -273.15, F: -459.67, K: 0 };
+
+    function parseNumber(value) {
+      // Trim and allow comma as decimal for convenience
+      const v = value.trim().replace(',', '.');
+      const num = Number(v);
+      return Number.isFinite(num) ? num : null;
+    }
+
+    function toCelsius(value, unit) {
+      if (unit === 'C') return value;
+      if (unit === 'F') return (value - 32) * (5/9);
+      if (unit === 'K') return value - 273.15;
+      return value;
+    }
+
+    function fromCelsius(c, unit) {
+      if (unit === 'C') return c;
+      if (unit === 'F') return c * (9/5) + 32;
+      if (unit === 'K') return c + 273.15;
+      return c;
+    }
+
+    function convert() {
+      statusBox.innerHTML = '';
+
+      const raw = input.value;
+      const n = parseNumber(raw);
+      const f = from.value;
+      const t = to.value;
+
+      // Validate numeric
+      if (n === null) {
+        statusBox.innerHTML = '<div class="err">Please enter a valid number (e.g., 37.5 or -10).</div>';
+        return;
+      }
+
+      // Absolute zero check for the chosen "from" unit
+      const minAllowed = MIN_BY_UNIT[f];
+      if (n < minAllowed) {
+        statusBox.innerHTML = `<div class="err">That’s below absolute zero for ${fmtUnit(f)}. Minimum is ${minAllowed} ${fmtUnit(f)}.</div>`;
+        return;
+      }
+
+      // Same-unit shortcut
+      if (f === t) {
+        statusBox.innerHTML = `<div class="ok">Same units selected: <strong>${clampDecimals(n)} ${fmtUnit(t)}</strong></div>`;
+        return;
+      }
+
+      // Convert via Celsius pivot for reliability
+      const c = toCelsius(n, f);
+      const out = fromCelsius(c, t);
+      const nice = clampDecimals(out);
+
+      statusBox.innerHTML = `<div class="ok">Converted: <strong>${nice} ${fmtUnit(t)}</strong></div>`;
+    }
+
+    // Swap From/To
+    function swapUnits() {
+      const prevFrom = from.value;
+      from.value = to.value;
+      to.value = prevFrom;
+    }
+
+    // Wire up events
+    convertBtn.addEventListener('click', convert);
+    swapBtn.addEventListener('click', () => { swapUnits(); convert(); });
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') convert(); });
+  </script>
+</body>
+</html>
